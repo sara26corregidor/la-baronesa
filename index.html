@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#6b1020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="La Baronesa">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>La Baronesa · Gastos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: libro de caja de la obra, claro y serio; para revisar en 30 segundos desde el celular.
+   IDEA: el talonario de La Baronesa: total grande, meses como barras y cada pago como un recibo.
+   PICTURE: la cifra total sobre el vino de la marca, y debajo las barras por mes.
+   COLOUR and TYPE: vino #6b1020, negro, hueso #f6f1ea; Schibsted Grotesk.
+   LAYOUT: una columna; encabezado, meses, buscador, lista y descarga. */
+:root{color-scheme:light dark;
+--bg:light-dark(#f6f1ea,#120a0c);--card:light-dark(#fffdf9,#1d1114);--ink:light-dark(#1a1012,#f3e9e4);
+--mute:light-dark(#6d5e60,#b9a6a8);--line:light-dark(#e2d6cc,#3a2529);--wine:light-dark(#6b1020,#d4475e);
+--ok:light-dark(#1f6b3a,#5fcf86);--warn:light-dark(#8a5a00,#f0b545)}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Schibsted Grotesk",system-ui,sans-serif;overflow-x:clip}
+header{background:#6b1020;color:#fff;padding:calc(20px + env(safe-area-inset-top)) max(5vw,16px) 64px}
+.brand{font-size:13px;letter-spacing:.02em;opacity:.85}
+h1{margin:2px 0 0;font-size:clamp(24px,6vw,34px);line-height:1.05;font-weight:800}
+.big{font-size:clamp(36px,10vw,54px);font-weight:800;line-height:1;margin-top:16px;white-space:nowrap}
+.sub{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:14px;opacity:.9;margin-top:8px}
+main{max-width:720px;margin:-44px auto 0;padding:0 max(4vw,12px) calc(40px + env(safe-area-inset-bottom))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.mes{display:grid;grid-template-columns:5.2em minmax(0,1fr) auto;gap:8px;align-items:center;font-size:14px;margin:7px 0;cursor:pointer;border:0;background:none;color:inherit;width:100%;padding:0;font-family:inherit;text-align:left}
+.mes .bar{height:12px;border-radius:6px;background:var(--wine);min-width:3px}
+.mes b{white-space:nowrap;text-align:right}
+.mes[aria-pressed=true] span{font-weight:800;color:var(--wine)}
+h2{font-size:20px;margin:26px 0 8px;line-height:1.1;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+h2 small{font-size:14px;font-weight:400;color:var(--mute)}
+.tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-bottom:10px}
+input,select{width:100%;font:16px "Schibsted Grotesk",system-ui;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:11px 12px;min-height:46px}
+input:focus,select:focus,button:focus-visible{outline:3px solid color-mix(in srgb,var(--wine) 45%,transparent);outline-offset:1px}
+.btn{min-height:46px;border-radius:12px;border:2px solid var(--wine);background:transparent;color:var(--wine);font:700 15px "Schibsted Grotesk",system-ui;padding:0 14px;cursor:pointer}
+.btn.full{width:100%;background:var(--wine);color:#fff;margin-top:16px;min-height:52px}
+ul{list-style:none;margin:0;padding:0}
+li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px}
+li .q{font-weight:600}
+li .v{font-weight:800;font-size:17px;white-space:nowrap;text-align:right}
+li .m{font-size:13px;color:var(--mute);grid-column:1/-1}
+.tag{display:inline-block;font-size:12px;border-radius:6px;padding:0 7px;margin-right:6px;border:1px solid currentColor}
+.tag.s{color:var(--ok)}.tag.p{color:var(--warn)}
+.empty{color:var(--mute);padding:18px 4px;display:block}
+.note{font-size:13px;color:var(--mute);margin-top:10px}
+.install{display:none}
+.install.show{display:block}
+@media(prefers-reduced-motion:no-preference){.mes .bar{transition:width .4s ease}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">La Corte de La Baronesa · Sogamoso</div>
+  <h1>Gastos del proyecto</h1>
+  <div class="big" id="total">—</div>
+  <div class="sub"><span id="nPagos">Cargando pagos…</span><span id="ult"></span></div>
+</header>
+<main>
+  <div class="card" aria-label="Gasto por mes"><div id="meses"><span class="empty">Cargando…</span></div></div>
+
+  <h2>Pagos <small id="conteo"></small></h2>
+  <div class="tools">
+    <input id="q" type="search" placeholder="Buscar: arriendo, Javier, Nequi…" aria-label="Buscar pagos">
+    <button class="btn" id="recargar" type="button" aria-label="Actualizar">Actualizar</button>
+  </div>
+  <ul id="lista"><li class="empty">Cargando…</li></ul>
+
+  <button class="btn full" id="xlsx" type="button">Descargar Excel</button>
+  <p class="note install" id="tipIOS">Para tenerla como app: en Safari toca Compartir y luego "Agregar a pantalla de inicio".</p>
+  <button class="btn full install" id="instalar" type="button" style="background:transparent;color:var(--wine)">Instalar como app</button>
+  <p class="note" id="estado"></p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+{
+const SHEET='1eGwgND-zTbCV-dCM5HJ_hNDxUAInrcZOlLPbRL5VuXo';
+const URL_DATOS='https://docs.google.com/spreadsheets/d/'+SHEET+'/gviz/tq?tqx=out:json&sheet=Pagos&range=A5:H&headers=0';
+const MES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const $=id=>document.getElementById(id);
+const fmt=n=>'$'+Math.round(n||0).toLocaleString('es-CO');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let rows=[],mesSel='';
+
+function aISO(t){const m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(t||'').trim());return m?m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0'):''}
+function celda(c){if(!c)return '';return c.f!=null&&typeof c.v!=='number'?c.f:(c.v??'')}
+
+async function cargar(){
+  $('estado').textContent='';
+  try{
+    const r=await fetch(URL_DATOS+'&t='+Date.now(),{cache:'no-store'});
+    const txt=await r.text();
+    const j=JSON.parse(txt.slice(txt.indexOf('{'),txt.lastIndexOf('}')+1));
+    if(j.status==='error')throw new Error('hoja');
+    rows=j.table.rows.map(x=>{const c=x.c||[];
+      let fecha=c[0]?(c[0].f||c[0].v||''):'';
+      if(typeof fecha==='string'&&fecha.startsWith('Date(')){const p=fecha.slice(5,-1).split(',').map(Number);fecha=new Date(p[0],p[1],p[2]).toLocaleDateString('es-CO')}
+      const valor=c[5]&&typeof c[5].v==='number'?c[5].v:Number(String(celda(c[5])).replace(/[^\d]/g,''))||0;
+      return {fecha:String(fecha),iso:aISO(fecha),benef:String(celda(c[1])),concepto:String(celda(c[2])),ref:String(celda(c[3])),metodo:String(celda(c[4])),valor,quien:String(celda(c[6])),soporte:String(celda(c[7]))};
+    }).filter(r=>r.valor>0);
+    try{localStorage.setItem('baronesa_cache',JSON.stringify({t:Date.now(),rows}))}catch(e){}
+    pintar();
+  }catch(e){
+    try{const c=JSON.parse(localStorage.getItem('baronesa_cache')||'null');if(c&&c.rows){rows=c.rows;pintar();$('estado').textContent='Sin conexión: mostrando los datos guardados del '+new Date(c.t).toLocaleString('es-CO')+'.';return}}catch(_){}
+    $('lista').innerHTML='<li class="empty">No se pudieron cargar los pagos. Revisa tu conexión y toca Actualizar.</li>';
+    $('meses').innerHTML='';$('nPagos').textContent='';
+  }
+}
+
+function pintar(){
+  const tot=rows.reduce((a,r)=>a+r.valor,0);
+  $('total').textContent=fmt(tot);
+  $('nPagos').textContent=rows.length+' pagos registrados';
+  const ult=rows.map(r=>r.iso).filter(Boolean).sort().pop();
+  $('ult').textContent=ult?'Último: '+ult.split('-').reverse().join('/'):'';
+  const by={};rows.forEach(r=>{const k=r.iso?r.iso.slice(0,7):'';by[k]=(by[k]||0)+r.valor});
+  const ks=Object.keys(by).sort((a,b)=>a===''?1:b===''?-1:a<b?-1:1);const mx=Math.max(1,...Object.values(by));
+  const nom=k=>k?MES[+k.slice(5,7)-1]+' '+k.slice(2,4):'Sin fecha';
+  $('meses').innerHTML=ks.map(k=>`<button class="mes" type="button" data-k="${esc(k||'none')}" aria-pressed="${mesSel===(k||'none')}"><span>${esc(nom(k))}</span><div class="bar" style="width:${(by[k]/mx*100).toFixed(1)}%"></div><b>${fmt(by[k])}</b></button>`).join('')+'<p class="note" style="margin:6px 0 0">Toca un mes para ver solo sus pagos.</p>';
+  lista();
+}
+function lista(){
+  const q=$('q').value.trim().toLowerCase();
+  const vis=rows.filter(r=>(!mesSel||(mesSel==='none'?!r.iso:r.iso.slice(0,7)===mesSel))&&(!q||[r.benef,r.concepto,r.ref,r.metodo,r.quien,r.fecha].join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>{if(!a.iso&&!b.iso)return 0;if(!a.iso)return 1;if(!b.iso)return -1;return a.iso<b.iso?1:-1});
+  const sub=vis.reduce((a,r)=>a+r.valor,0);
+  $('conteo').textContent=vis.length+' · '+fmt(sub);
+  $('lista').innerHTML=vis.length?vis.map(r=>`<li><span class="q">${esc(r.concepto||'Pago')}</span><span class="v">${fmt(r.valor)}</span>
+    <span class="m">${esc(r.fecha||'Sin fecha')} · ${esc(r.benef)}${r.metodo?' · '+esc(r.metodo):''}${r.quien?' · Pagó: '+esc(r.quien):''}</span>
+    <span class="m">${r.ref?esc(r.ref)+' · ':''}<span class="tag ${/^s/i.test(r.soporte)?'s':'p'}">${/^s/i.test(r.soporte)?'Soporte en el grupo':'Sin soporte'}</span></span></li>`).join(''):'<li class="empty">No hay pagos con ese filtro.</li>';
+}
+$('meses').addEventListener('click',e=>{const b=e.target.closest('.mes');if(!b)return;mesSel=mesSel===b.dataset.k?'':b.dataset.k;pintar()});
+$('q').addEventListener('input',lista);
+$('recargar').onclick=cargar;
+
+$('xlsx').onclick=()=>{
+  if(!window.XLSX){$('estado').textContent='No se pudo preparar el Excel. Revisa tu conexión.';return}
+  const ord=[...rows].sort((a,b)=>{if(!a.iso)return 1;if(!b.iso)return -1;return a.iso<b.iso?-1:1});
+  const data=[['La Baronesa: gastos del proyecto'],['Descargado el '+new Date().toLocaleDateString('es-CO')],[],['Fecha','Beneficiario','Concepto','Referencia','Método','Valor','Quién pagó','Soporte en el grupo']];
+  ord.forEach(r=>data.push([r.fecha,r.benef,r.concepto,r.ref,r.metodo,r.valor,r.quien,r.soporte]));
+  const fin=data.length;data.push([],['','','','','Total',{f:'SUM(F5:F'+fin+')'}]);
+  const ws=XLSX.utils.aoa_to_sheet(data);ws['!cols']=[{wch:12},{wch:32},{wch:36},{wch:24},{wch:13},{wch:14},{wch:13},{wch:12}];
+  for(let i=4;i<data.length;i++){const c=ws[XLSX.utils.encode_cell({r:i,c:5})];if(c)c.z='"$"#,##0'}
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Pagos');
+  XLSX.writeFile(wb,'La Baronesa - gastos del proyecto.xlsx');
+};
+
+let prompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();prompt=e;$('instalar').classList.add('show')});
+$('instalar').onclick=async()=>{if(!prompt)return;prompt.prompt();await prompt.userChoice;prompt=null;$('instalar').classList.remove('show')};
+const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.navigator.standalone;if(ios)$('tipIOS').classList.add('show');
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+cargar();
+}
+</script>
+</body>
+</html>
